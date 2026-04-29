@@ -1,4 +1,4 @@
-const CACHE_NAME = 'as-pro-v1';
+const CACHE_NAME = 'as-app';
 const ASSETS = [
   'index.html',
   'manifest.json'
