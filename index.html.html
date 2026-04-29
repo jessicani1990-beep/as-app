@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AS Pro 疼痛追蹤 APP</title>
+    
+    <!-- PWA 核心連結：這兩行是新加入的 -->
+    <link rel="manifest" href="manifest.json">
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(reg => console.log('Service Worker 已註冊', reg))
+                    .catch(err => console.log('註冊失敗', err));
+            });
+        }
+    </script>
+
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root { --bg: #f4f7f6; --primary: #94a7ae; --accent: #d4a373; --danger: #e29578; --warning: #ffca3a; --success: #81b29a; }
+        body { background: var(--bg); font-family: sans-serif; color: #444; padding-bottom: 50px; }
+        .nav-bar { background: #fff; display: flex; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .nav-btn { flex: 1; padding: 15px; border: none; background: none; font-weight: bold; color: #aaa; border-bottom: 3px solid transparent; }
+        .nav-btn.active { color: var(--primary); border-bottom: 3px solid var(--primary); }
+        .tab-content { display: none; padding: 15px; }
+        .tab-content.active { display: block; }
+        .card { border-radius: 15px; border: none; box-shadow: 0 2px 8px rgba(0,0,0,0.05); padding: 20px; background: #fff; margin-bottom: 15px; }
+        .form-label { font-weight: bold; color: var(--primary); font-size: 0.85rem; margin-top: 8px; }
+        .btn-main { background: var(--primary); color: #fff; border-radius: 10px; width: 100%; padding: 12px; border: none; font-weight: bold; }
+        .stat-box { background: #f8faf9; border: 1px solid #eee; border-radius: 12px; padding: 10px; text-align: center; }
+        .stat-num { display: block; font-size: 1.2rem; font-weight: bold; color: var(--primary); }
+        .h-detail { font-size: 0.85rem; line-height: 1.6; }
+        .h-badge { font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; margin-right: 4px; display: inline-block; }
+        .bg-tcm { background-color: #81b29a; color: white; }
+        .bg-meds { background-color: #94a7ae; color: white; }
+        .bg-junk { background-color: #ffca3a; color: #333; }
+    </style>
+</head>
+<body>
+
+<div class="nav-bar">
+    <button class="nav-btn active" onclick="showTab('record')">紀錄</button>
+    <button class="nav-btn" onclick="showTab('history'); renderHistory();">歷史</button>
+    <button class="nav-btn" onclick="showTab('analysis'); initAnalysis();">分析</button>
+    <button class="nav-btn" onclick="showTab('system')">系統</button>
+</div>
+
+<!-- 1. 紀錄頁 -->
+<div id="tab-record" class="tab-content active">
+    <div class="card">
+        <label class="form-label">📅 紀錄日期</label>
+        <input type="date" id="recordDate" class="form-control mb-3">
+        <div class="row g-2">
+            <div class="col-6"><label class="form-label">☁️ 天氣</label><select id="weather" class="form-select"><option>晴天</option><option>多雲</option><option>雨天</option><option>濕冷</option></select></div>
+            <div class="col-6"><label class="form-label">💧 濕度 (%)</label><input type="number" id="humidity" class="form-control" placeholder="70"></div>
+        </div>
+        <label class="form-label mt-3">⚡ 疼痛指數 (1-10)：<span id="pVal" class="text-danger">1</span></label>
+        <input type="range" class="form-range" min="1" max="10" id="pain" value="1" oninput="pVal.innerText=this.value">
+        <div class="row g-2 mt-2 text-center">
+            <div class="col-4"><input type="checkbox" id="meds"> <label for="meds">💊 希樂葆</label></div>
+            <div class="col-4"><input type="checkbox" id="tcm"> <label for="tcm" class="text-success">🌿 中藥</label></div>
+            <div class="col-4"><input type="checkbox" id="junk"> <label for="junk" class="text-warning">🍕 垃圾食</label></div>
+        </div>
+        <div class="row g-2 mt-3">
+            <div class="col-6"><label class="form-label">😴 睡眠分數</label><input type="number" id="sleep" class="form-control" placeholder="0-100"></div>
+            <div class="col-6"><label class="form-label">💓 HRV</label><input type="number" id="hrv" class="form-control" placeholder="毫秒"></div>
+            <div class="col-6"><label class="form-label">🏃 有氧 (分)</label><input type="number" id="aerobic" class="form-control" value="0"></div>
+            <div class="col-6"><label class="form-label">🏋️ 重訓 (分)</label><input type="number" id="weight" class="form-control" value="0"></div>
+        </div>
+        <label class="form-label mt-3">📝 備註 (原因對照關鍵)</label>
+        <textarea id="note" class="form-control mb-4" rows="2" placeholder="備註原因..."></textarea>
+        <button onclick="saveData()" class="btn-main">儲存完整數據</button>
+    </div>
+</div>
+
+<!-- 2. 歷史頁 -->
+<div id="tab-history" class="tab-content">
+    <div id="historyList"></div>
+</div>
+
+<!-- 3. 分析頁 -->
+<div id="tab-analysis" class="tab-content">
+    <div class="card">
+        <h6>📊 疼痛原因對照圖 (近14天)</h6>
+        <canvas id="trendChart"></canvas>
+        <div class="mt-2 small text-muted text-center">🟡：有吃垃圾食物</div>
+    </div>
+    <div class="row g-2 mb-3">
+        <div class="col-4"><div class="stat-box"><small>有吃希樂葆</small><span class="stat-num" id="avgMed">-</span><small>平均疼痛</small></div></div>
+        <div class="col-4"><div class="stat-box"><small>吃垃圾食</small><span class="stat-num" id="avgJunk" style="color:var(--danger)">-</span><small>平均疼痛</small></div></div>
+        <div class="col-4"><div class="stat-box"><small>有運動時</small><span class="stat-num" id="avgExer" style="color:var(--success)">-</span><small>平均疼痛</small></div></div>
+    </div>
+</div>
+
+<!-- 4. 系統頁 -->
+<div id="tab-system" class="tab-content">
+    <div class="card text-center">
+        <button onclick="copyData()" class="btn btn-sm btn-outline-primary w-100 mb-3">備份數據到剪貼簿</button>
+        <textarea id="importArea" class="form-control mb-2" rows="3" placeholder="貼上舊數據代碼..."></textarea>
+        <button onclick="doImport()" class="btn btn-sm btn-secondary w-100">恢復數據</button>
+    </div>
+</div>
+
+<script>
+    const d = new Date();
+    document.getElementById('recordDate').value = new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+
+    function showTab(tabName) {
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('tab-' + tabName).classList.add('active');
+        if(event) event.currentTarget.classList.add('active');
+    }
+
+    function saveData() {
+        const rec = {
+            date: document.getElementById('recordDate').value,
+            weather: document.getElementById('weather').value,
+            humidity: document.getElementById('humidity').value || 0,
+            pain: parseInt(document.getElementById('pain').value),
+            meds: document.getElementById('meds').checked,
+            tcm: document.getElementById('tcm').checked,
+            junk: document.getElementById('junk').checked,
+            sleep: parseInt(document.getElementById('sleep').value) || 0,
+            hrv: parseInt(document.getElementById('hrv').value) || 0,
+            aerobic: parseInt(document.getElementById('aerobic').value) || 0,
+            weight: parseInt(document.getElementById('weight').value) || 0,
+            note: document.getElementById('note').value
+        };
+        let data = JSON.parse(localStorage.getItem('as_pro_v4')) || [];
+        data.unshift(rec);
+        data.sort((a,b) => new Date(b.date) - new Date(a.date));
+        localStorage.setItem('as_pro_v4', JSON.stringify(data));
+        alert('數據已儲存！');
+    }
+
+    function renderHistory() {
+        const data = JSON.parse(localStorage.getItem('as_pro_v4')) || [];
+        const list = document.getElementById('historyList');
+        if(!data.length) { list.innerHTML = '<p class="text-center mt-5">尚未有紀錄</p>'; return; }
+        
+        list.innerHTML = data.map((i, idx) => `
+            <div class="card mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="fw-bold" style="color:var(--primary)">${i.date}</span>
+                    <span class="badge ${i.pain > 6 ? 'bg-danger' : 'bg-secondary'}">疼痛: ${i.pain} 分</span>
+                </div>
+                <div class="h-detail">
+                    <div class="mb-2">
+                        <span class="h-badge bg-light text-dark">☁️ ${i.weather}</span>
+                        <span class="h-badge bg-light text-dark">💧 ${i.humidity}%</span>
+                        ${i.meds ? '<span class="h-badge bg-meds">💊 希樂葆</span>' : ''}
+                        ${i.tcm ? '<span class="h-badge bg-tcm">🌿 中藥</span>' : ''}
+                        ${i.junk ? '<span class="h-badge bg-junk">🍕 垃圾食</span>' : ''}
+                    </div>
+                    <div class="row g-1 text-muted mb-2">
+                        <div class="col-6">😴 睡眠: ${i.sleep}</div>
+                        <div class="col-6">🏃 有氧: ${i.aerobic}m</div>
+                    </div>
+                    <div class="p-2 small" style="background:#fcfcfc; border-radius:8px;">
+                        <strong>📝 備註：</strong>${i.note || '無'}
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    let chart;
+    function initAnalysis() {
+        const raw = JSON.parse(localStorage.getItem('as_pro_v4')) || [];
+        const data = [...raw].sort((a,b) => new Date(a.date) - new Date(b.date)).slice(-14);
+        const labels = data.map(i => i.date.slice(5));
+        const painPoints = data.map(i => i.pain);
+        const pointColors = data.map(i => i.junk ? '#ffca3a' : '#e29578');
+        const pointRadius = data.map(i => i.junk ? 9 : 5);
+
+        if(chart) chart.destroy();
+        chart = new Chart(document.getElementById('trendChart'), {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: '疼痛指數',
+                    data: painPoints,
+                    borderColor: '#e29578',
+                    pointBackgroundColor: pointColors,
+                    pointRadius: pointRadius,
+                    tension: 0.3
+                }]
+            }
+        });
+
+        const calcAvg = (arr) => arr.length ? (arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(1) : '-';
+        document.getElementById('avgMed').innerText = calcAvg(raw.filter(i => i.meds).map(i => i.pain));
+        document.getElementById('avgJunk').innerText = calcAvg(raw.filter(i => i.junk).map(i => i.pain));
+        document.getElementById('avgExer').innerText = calcAvg(raw.filter(i => (i.aerobic + i.weight) > 0).map(i => i.pain));
+    }
+
+    function copyData() { navigator.clipboard.writeText(localStorage.getItem('as_pro_v4')); alert('已複製數據'); }
+    function doImport() { 
+        const val = document.getElementById('importArea').value;
+        try { JSON.parse(val); localStorage.setItem('as_pro_v4', val); location.reload(); } catch(e) { alert('恢復失敗'); }
+    }
+</script>
+</body>
+</html>
