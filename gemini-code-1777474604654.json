@@ -1,0 +1,15 @@
+{
+  "name": "AS Pro 疼痛追蹤",
+  "short_name": "AS Pro",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#f4f7f6",
+  "theme_color": "#94a7ae",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3022/3022201.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
