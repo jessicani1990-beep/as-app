@@ -1,4 +1,4 @@
-const CACHE_NAME = 'as-pro-v4';
+const CACHE_NAME = 'as-ppp';
 const ASSETS = ['./index.html', './manifest.json'];
 
 self.addEventListener('install', (e) => {
