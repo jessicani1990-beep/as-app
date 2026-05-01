@@ -177,10 +177,8 @@
     }
 
     function renderHistory() {
-       // 在 renderHistory 的循環中修改這一段
-const rawDate = item.date ? item.date.toString() : '';
-// 排除 T 之後的時間字串，只拿前十位，並確保不被轉成 Date 物件產生時區差
-const displayDate = rawDate.split('T')[0].substring(0, 10);
+        const data = JSON.parse(localStorage.getItem(DB_NAME)) || [];
+        const container = document.getElementById('historyList');
         container.innerHTML = data.map(i => `
             <div class="history-card">
                 <div class="pain-badge">痛: ${i.pain}</div>
