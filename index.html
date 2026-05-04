@@ -97,7 +97,10 @@
 
 <!-- 完整歷史 -->
 <div id="tab-history" class="tab-content px-3">
-    <div class="filter-box">
+    <div class="filter-box" style="flex-wrap:wrap;gap:8px;">
+        <select id="historyMonth" class="form-select form-select-sm border-0" style="max-width:130px" onchange="renderHistory()">
+            <option value="">全部月份</option>
+        </select>
         <input type="text" id="historySearch" class="form-control form-control-sm border-0" placeholder="🔍 搜尋備註..." oninput="renderHistory()">
         <select id="sortOrder" class="form-select form-select-sm border-0" style="max-width:120px" onchange="renderHistory()">
             <option value="newest">最新在前</option>
@@ -158,9 +161,34 @@ let chartInstance = null;
 const today = new Date().toISOString().split('T')[0];
 document.getElementById('recordDate').value = today;
 document.getElementById('endDate').value = today;
-const lastWeek = new Date();
-lastWeek.setDate(lastWeek.getDate() - 30);
-document.getElementById('startDate').value = lastWeek.toISOString().split('T')[0];
+
+// 分析起始日：從最早有資料的那天開始
+(function initAnalysisDates() {
+    const data = JSON.parse(localStorage.getItem(DB_NAME)) || [];
+    if (data.length > 0) {
+        const earliest = data.map(i => i.date).sort()[0];
+        document.getElementById('startDate').value = earliest;
+    } else {
+        const d = new Date(); d.setDate(d.getDate() - 30);
+        document.getElementById('startDate').value = d.toISOString().split('T')[0];
+    }
+})();
+
+// 歷史月份選擇器：動態產生有資料的月份，預設當月
+(function initMonthPicker() {
+    const data = JSON.parse(localStorage.getItem(DB_NAME)) || [];
+    const months = [...new Set(data.map(i => i.date.slice(0, 7)))].sort().reverse();
+    const sel = document.getElementById('historyMonth');
+    const curMonth = today.slice(0, 7);
+    months.forEach(m => {
+        const opt = document.createElement('option');
+        opt.value = m;
+        const [y, mo] = m.split('-');
+        opt.textContent = `${y} 年 ${parseInt(mo)} 月`;
+        if (m === curMonth) opt.selected = true;
+        sel.appendChild(opt);
+    });
+})();
 
 // 載入今日已存紀錄
 (function loadTodayRecord() {
@@ -242,6 +270,8 @@ function renderHistory() {
     let data = JSON.parse(localStorage.getItem(DB_NAME)) || [];
     const search = document.getElementById('historySearch').value.toLowerCase();
     const sort = document.getElementById('sortOrder').value;
+    const month = document.getElementById('historyMonth').value;
+    if (month) data = data.filter(i => i.date.startsWith(month));
     if (search) data = data.filter(i => (i.memo || '').toLowerCase().includes(search));
     if (sort === 'newest') data.sort((a, b) => b.date.localeCompare(a.date));
     if (sort === 'oldest') data.sort((a, b) => a.date.localeCompare(b.date));
