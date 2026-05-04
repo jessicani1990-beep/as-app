@@ -431,12 +431,18 @@ function initAnalysis(){
     {n:'💗 前日 HRV > 60',  f:p=>p.hrv>60},
     {n:'💔 前日 HRV ≤ 60',  f:p=>p.hrv>0&&p.hrv<=60},
   ];
-  document.getElementById('factorStatsBody').innerHTML=facs.map(cfg=>{
+  const facRows=facs.map(cfg=>{
     const g=pairs.filter(p=>cfg.f(p.prev));
-    if(!g.length)return`<tr><td>${cfg.n}</td><td style="color:var(--t3)">—</td><td style="color:var(--t3)">—</td><td></td></tr>`;
-    const avg=(g.reduce((s,x)=>s+x.pain,0)/g.length).toFixed(1);
-    const[rc,rt]=avg>=7?['rh','高風險']:avg>=4.5?['rm','中等']:['rl','低風險'];
-    return`<tr><td>${cfg.n}</td><td>${g.length}</td><td class="mn">${avg}</td><td><span class="rp ${rc}">${rt}</span></td></tr>`;
+    if(!g.length)return{n:cfg.n,avg:null};
+    const avg=g.reduce((s,x)=>s+x.pain,0)/g.length;
+    return{n:cfg.n,count:g.length,avg};
+  });
+  facRows.sort((a,b)=>{ if(a.avg===null&&b.avg===null)return 0; if(a.avg===null)return 1; if(b.avg===null)return -1; return b.avg-a.avg; });
+  document.getElementById('factorStatsBody').innerHTML=facRows.map(r=>{
+    if(r.avg===null)return`<tr><td>${r.n}</td><td style="color:var(--t3)">—</td><td style="color:var(--t3)">—</td><td></td></tr>`;
+    const avg=r.avg.toFixed(1);
+    const[rc,rt]=r.avg>=7?['rh','高風險']:r.avg>=4.5?['rm','中等']:['rl','低風險'];
+    return`<tr><td>${r.n}</td><td>${r.count}</td><td class="mn">${avg}</td><td><span class="rp ${rc}">${rt}</span></td></tr>`;
   }).join('');
 }
 
