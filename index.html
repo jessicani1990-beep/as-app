@@ -3,53 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AS Pro 系統 - 區間分析固定版</title>
-    
-    <!-- PWA 關鍵宣告 -->
+    <title>AS Pro 系統</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#94a7ae">
-    
-    <!-- iOS 專屬 App 設定 -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="AS Pro">
     <link rel="apple-touch-icon" href="icon.png">
-
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
     <style>
         :root { --nav-active: #94a7ae; }
-        body { background: #f0f2f5; font-family: -apple-system, sans-serif; padding-bottom: 50px; }
-        .nav-bar { display: flex; border-bottom: 1px solid #dee2e6; margin-bottom: 20px; position: sticky; top: 0; background: #fff; z-index: 1000; }
-        .nav-btn { flex: 1; padding: 12px 2px; border: none; background: none; font-size: 0.85rem; color: #888; border-bottom: 3px solid transparent; }
+        body { background: #f0f2f5; font-family: -apple-system, sans-serif; padding-bottom: 60px; }
+        .nav-bar { display: flex; border-bottom: 1px solid #dee2e6; position: sticky; top: 0; background: #fff; z-index: 1000; }
+        .nav-btn { flex: 1; padding: 12px 2px; border: none; background: none; font-size: 0.82rem; color: #888; border-bottom: 3px solid transparent; }
         .nav-btn.active { color: #333; border-bottom: 3px solid var(--nav-active); font-weight: bold; }
+        .tab-content { display: none; max-width: 1000px; margin: 0 auto; padding-top: 15px; }
+        .tab-content.active { display: block; }
+        .main-card { background: white; border-radius: 15px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px; }
         
-        .history-card { background: white; border-radius: 12px; border: 1px solid #e0e0e0; padding: 20px; margin-bottom: 15px; position: relative; }
-        .pain-badge { position: absolute; top: 15px; right: 15px; background: #d9534f; color: white; padding: 4px 12px; border-radius: 6px; font-weight: bold; font-size: 0.9rem; }
-        .pill-tag { color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; display: inline-block; margin-top: 5px; margin-right: 5px; }
+        /* 歷史卡片 */
+        .history-card { background: white; border-radius: 12px; border: 1px solid #e0e0e0; padding: 18px; margin-bottom: 12px; position: relative; }
+        .pain-badge { position: absolute; top: 15px; right: 15px; color: white; padding: 4px 12px; border-radius: 6px; font-weight: bold; font-size: 0.9rem; }
+        .pill-tag { color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; display: inline-block; margin-top: 5px; margin-right: 4px; }
         .pill-med { background: #94a7ae; }
         .pill-herb { background: #81b29a; }
         .pill-junk { background: #e29578; }
-        
-        /* 刪除按鈕樣式 */
-        .delete-btn { position: absolute; bottom: 15px; right: 15px; color: #bbb; text-decoration: none; font-size: 0.8rem; }
+        .delete-btn { position: absolute; bottom: 12px; right: 15px; color: #ccc; text-decoration: none; font-size: 0.8rem; }
         .delete-btn:hover { color: #d9534f; }
-
-        .factor-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        .duplicate-warn { background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 10px 15px; margin-bottom: 12px; font-size: 0.85rem; color: #856404; }
+        
+        /* 分析 */
+        .filter-box { display: flex; gap: 8px; align-items: center; margin-bottom: 15px; background: #f8f9fa; padding: 10px 12px; border-radius: 10px; }
+        .factor-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
         .factor-table th { color: #888; font-weight: normal; padding-bottom: 10px; text-align: left; border-bottom: 1px solid #eee; }
-        .factor-table td { padding: 12px 0; border-bottom: 1px solid #f9f9f9; }
-        .risk-badge { color: white; padding: 2px 8px; border-radius: 5px; font-size: 0.75rem; font-weight: bold; float: right; }
+        .factor-table td { padding: 11px 0; border-bottom: 1px solid #f5f5f5; vertical-align: middle; }
+        .risk-badge { color: white; padding: 2px 9px; border-radius: 5px; font-size: 0.75rem; font-weight: bold; float: right; }
         .risk-high { background: #d9534f; }
+        .risk-mid { background: #f0ad4e; }
         .risk-low { background: #5cb85c; }
-
-        .tab-content { display: none; max-width: 1000px; margin: 0 auto; }
-        .tab-content.active { display: block; }
-        .main-card { background: white; border-radius: 15px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px; }
-        .filter-box { display: flex; gap: 10px; align-items: center; margin-bottom: 15px; background: #f8f9fa; padding: 10px; border-radius: 10px; }
+        .lag-note { font-size: 0.78rem; color: #94a7ae; background: #f0f4f5; padding: 7px 12px; border-radius: 7px; margin-bottom: 15px; }
+        .alert-streak { background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px 15px; border-radius: 0 8px 8px 0; margin-bottom: 15px; font-size: 0.85rem; }
+        
+        /* 統計摘要 */
+        .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px; }
+        .stat-item { background: #f8f9fa; border-radius: 10px; padding: 12px; text-align: center; }
+        .stat-num { font-size: 1.4rem; font-weight: bold; color: #333; }
+        .stat-label { font-size: 0.72rem; color: #888; margin-top: 2px; }
     </style>
 </head>
-
 <body>
 
 <div class="nav-bar">
@@ -61,18 +63,21 @@
 
 <!-- 每日紀錄 -->
 <div id="tab-record" class="tab-content active px-3">
+    <div id="todayWarn"></div>
     <div class="main-card">
         <h6 class="text-center fw-bold mb-4">📝 數據登記</h6>
-        <input type="date" id="recordDate" class="form-control mb-3 text-center fw-bold border-0 bg-light">
+        <input type="date" id="recordDate" class="form-control mb-3 text-center fw-bold border-0 bg-light" onchange="checkDuplicateDate()">
         <div class="row g-2 mb-3">
-            <div class="col-6"><label class="small text-muted">☁️ 天氣</label><select id="weather" class="form-select border-0 bg-light"><option>晴天</option><option>多雲</option><option>雨天</option><option>濕冷</option></select></div>
-            <div class="col-6"><label class="small text-muted">💧 濕度 %</label><input type="number" id="humidity" class="form-control border-0 bg-light" placeholder="60"></div>
+            <div class="col-6"><label class="small text-muted">☁️ 天氣</label>
+                <select id="weather" class="form-select border-0 bg-light"><option>晴天</option><option>多雲</option><option>雨天</option><option>濕冷</option></select></div>
+            <div class="col-6"><label class="small text-muted">💧 濕度 %</label>
+                <input type="number" id="humidity" class="form-control border-0 bg-light" placeholder="60"></div>
         </div>
         <div class="mb-3 text-center">
             <label class="small text-muted d-flex justify-content-between">⚡ 疼痛程度 <span id="pVal" class="text-danger fw-bold">1</span></label>
             <input type="range" class="form-range" min="0" max="10" id="pain" value="1" oninput="pVal.innerText=this.value">
         </div>
-        <div style="background: #f8f9fa; border-radius: 10px; padding: 15px; margin: 15px 0; display: flex; justify-content: space-around;">
+        <div style="background:#f8f9fa;border-radius:10px;padding:15px;margin:15px 0;display:flex;justify-content:space-around;">
             <div class="form-check"><input class="form-check-input" type="checkbox" id="meds"><label class="form-check-label small">💊 希樂葆</label></div>
             <div class="form-check"><input class="form-check-input" type="checkbox" id="herbs"><label class="form-check-label small">🌿 中藥</label></div>
             <div class="form-check"><input class="form-check-input" type="checkbox" id="junk"><label class="form-check-label small">🍕 垃圾食物</label></div>
@@ -92,6 +97,15 @@
 
 <!-- 完整歷史 -->
 <div id="tab-history" class="tab-content px-3">
+    <div class="filter-box">
+        <input type="text" id="historySearch" class="form-control form-control-sm border-0" placeholder="🔍 搜尋備註..." oninput="renderHistory()">
+        <select id="sortOrder" class="form-select form-select-sm border-0" style="max-width:120px" onchange="renderHistory()">
+            <option value="newest">最新在前</option>
+            <option value="oldest">最舊在前</option>
+            <option value="pain_high">痛感高到低</option>
+            <option value="pain_low">痛感低到高</option>
+        </select>
+    </div>
     <div id="historyList"></div>
 </div>
 
@@ -102,16 +116,23 @@
         <span class="small text-muted">至</span>
         <input type="date" id="endDate" class="form-control form-control-sm border-0" onchange="initAnalysis()">
     </div>
+    <div id="streakAlert"></div>
     <div class="main-card"><canvas id="trendChart" height="200"></canvas></div>
     <div class="main-card">
-        <h6 class="fw-bold mb-3">🔍 因子徹底對照統計</h6>
+        <h6 class="fw-bold mb-1">📊 期間統計摘要</h6>
+        <div id="summaryStats" class="stat-grid mt-3"></div>
+    </div>
+    <div class="main-card">
+        <h6 class="fw-bold mb-1">🔍 因子對照分析</h6>
+        <div class="lag-note">💡 邏輯說明：今日的疼痛對照<strong>前一天</strong>的生活因子，分析哪些習慣影響了隔日疼痛。</div>
+        <div id="lagCoverage" class="text-muted small mb-3"></div>
         <table class="factor-table">
             <thead>
                 <tr>
-                    <th>生活因子</th>
-                    <th>筆數</th>
-                    <th>平均疼痛</th>
-                    <th style="text-align: right;">風險</th>
+                    <th>前日因子</th>
+                    <th>配對筆數</th>
+                    <th>隔日平均痛感</th>
+                    <th style="text-align:right;">評估</th>
                 </tr>
             </thead>
             <tbody id="factorStatsBody"></tbody>
@@ -122,134 +143,266 @@
 <!-- 備份 -->
 <div id="tab-system" class="tab-content px-3">
     <div class="main-card text-center">
-        <button onclick="exportData()" class="btn btn-outline-dark btn-sm w-100 mb-2">匯出 JSON</button>
+        <p class="text-muted small mb-3">資料儲存於本機瀏覽器，請定期備份</p>
+        <button onclick="exportData()" class="btn btn-outline-dark btn-sm w-100 mb-2">📥 匯出 JSON 備份</button>
         <input type="file" id="importFile" style="display:none" onchange="importData(event)">
-        <button onclick="document.getElementById('importFile').click()" class="btn btn-outline-secondary btn-sm w-100">匯入 JSON</button>
+        <button onclick="document.getElementById('importFile').click()" class="btn btn-outline-secondary btn-sm w-100 mb-3">📤 匯入 JSON 備份</button>
+        <button onclick="if(confirm('確定清除所有資料？此操作無法復原')){localStorage.removeItem(DB_NAME);location.reload()}" class="btn btn-outline-danger btn-sm w-100">🗑️ 清除所有資料</button>
     </div>
 </div>
 
 <script>
-    const DB_NAME = 'as_pro_v_range';
-    let chartInstance = null;
-    
-    // 初始化日期
-    const today = new Date().toISOString().split('T')[0];
-    document.getElementById('recordDate').value = today;
-    document.getElementById('endDate').value = today;
-    const lastWeek = new Date();
-    lastWeek.setDate(lastWeek.getDate() - 7);
-    document.getElementById('startDate').value = lastWeek.toISOString().split('T')[0];
+const DB_NAME = 'as_pro_v_range';
+let chartInstance = null;
 
-    function showTab(tabId, btn) {
-        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById('tab-' + tabId).classList.add('active');
-        btn.classList.add('active');
+const today = new Date().toISOString().split('T')[0];
+document.getElementById('recordDate').value = today;
+document.getElementById('endDate').value = today;
+const lastWeek = new Date();
+lastWeek.setDate(lastWeek.getDate() - 30);
+document.getElementById('startDate').value = lastWeek.toISOString().split('T')[0];
+
+// 載入今日已存紀錄
+(function loadTodayRecord() {
+    const data = JSON.parse(localStorage.getItem(DB_NAME)) || [];
+    const rec = data.find(i => i.date === today);
+    if (rec) {
+        document.getElementById('pain').value = rec.pain;
+        document.getElementById('pVal').innerText = rec.pain;
+        document.getElementById('weather').value = rec.weather;
+        document.getElementById('humidity').value = rec.humidity || '';
+        document.getElementById('meds').checked = rec.meds;
+        document.getElementById('herbs').checked = rec.herbs;
+        document.getElementById('junk').checked = rec.junk;
+        document.getElementById('sleep').value = rec.sleep || '';
+        document.getElementById('hrv').value = rec.hrv || '';
+        document.getElementById('aerobic').value = rec.aerobic || '';
+        document.getElementById('weight').value = rec.weight || '';
+        document.getElementById('memo').value = rec.memo || '';
+        document.getElementById('todayWarn').innerHTML = `<div class="duplicate-warn px-3">⚠️ 今日已有紀錄，儲存將覆蓋舊資料。</div>`;
     }
+})();
 
-    function saveData() {
-        const rec = {
-            id: Date.now(),
-            date: document.getElementById('recordDate').value,
-            weather: document.getElementById('weather').value,
-            humidity: document.getElementById('humidity').value || 0,
-            pain: parseInt(document.getElementById('pain').value),
-            meds: document.getElementById('meds').checked,
-            herbs: document.getElementById('herbs').checked,
-            junk: document.getElementById('junk').checked,
-            sleep: parseInt(document.getElementById('sleep').value) || 0,
-            hrv: parseInt(document.getElementById('hrv').value) || 0,
-            aerobic: parseInt(document.getElementById('aerobic').value) || 0,
-            weight: parseInt(document.getElementById('weight').value) || 0,
-            memo: document.getElementById('memo').value
-        };
-        let data = JSON.parse(localStorage.getItem(DB_NAME)) || [];
-        data.unshift(rec);
-        localStorage.setItem(DB_NAME, JSON.stringify(data));
-        alert('儲存成功');
+function checkDuplicateDate() {
+    const date = document.getElementById('recordDate').value;
+    const data = JSON.parse(localStorage.getItem(DB_NAME)) || [];
+    const exists = data.some(i => i.date === date);
+    const warn = document.getElementById('todayWarn');
+    warn.innerHTML = exists ? `<div class="duplicate-warn px-3">⚠️ 此日期已有紀錄，儲存將覆蓋舊資料。</div>` : '';
+}
+
+function showTab(tabId, btn) {
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + tabId).classList.add('active');
+    btn.classList.add('active');
+}
+
+function saveData() {
+    const date = document.getElementById('recordDate').value;
+    if (!date) { alert('請選擇日期'); return; }
+    const rec = {
+        id: Date.now(),
+        date,
+        weather: document.getElementById('weather').value,
+        humidity: parseInt(document.getElementById('humidity').value) || 0,
+        pain: parseInt(document.getElementById('pain').value),
+        meds: document.getElementById('meds').checked,
+        herbs: document.getElementById('herbs').checked,
+        junk: document.getElementById('junk').checked,
+        sleep: parseInt(document.getElementById('sleep').value) || 0,
+        hrv: parseInt(document.getElementById('hrv').value) || 0,
+        aerobic: parseInt(document.getElementById('aerobic').value) || 0,
+        weight: parseInt(document.getElementById('weight').value) || 0,
+        memo: document.getElementById('memo').value
+    };
+    let data = JSON.parse(localStorage.getItem(DB_NAME)) || [];
+    // 覆蓋同日期舊資料
+    data = data.filter(i => i.date !== date);
+    data.unshift(rec);
+    localStorage.setItem(DB_NAME, JSON.stringify(data));
+    document.getElementById('todayWarn').innerHTML = `<div class="duplicate-warn px-3" style="background:#d4edda;border-color:#28a745;color:#155724">✅ 儲存成功！</div>`;
+    setTimeout(() => { document.getElementById('todayWarn').innerHTML = ''; }, 2000);
+}
+
+function deleteItem(id) {
+    if (!confirm('確定要刪除這筆紀錄嗎？')) return;
+    let data = JSON.parse(localStorage.getItem(DB_NAME)) || [];
+    localStorage.setItem(DB_NAME, JSON.stringify(data.filter(i => i.id !== id)));
+    renderHistory();
+}
+
+function painColor(p) {
+    if (p <= 3) return '#5cb85c';
+    if (p <= 6) return '#f0ad4e';
+    return '#d9534f';
+}
+
+function renderHistory() {
+    let data = JSON.parse(localStorage.getItem(DB_NAME)) || [];
+    const search = document.getElementById('historySearch').value.toLowerCase();
+    const sort = document.getElementById('sortOrder').value;
+    if (search) data = data.filter(i => (i.memo || '').toLowerCase().includes(search));
+    if (sort === 'newest') data.sort((a, b) => b.date.localeCompare(a.date));
+    if (sort === 'oldest') data.sort((a, b) => a.date.localeCompare(b.date));
+    if (sort === 'pain_high') data.sort((a, b) => b.pain - a.pain);
+    if (sort === 'pain_low') data.sort((a, b) => a.pain - b.pain);
+
+    const container = document.getElementById('historyList');
+    if (data.length === 0) {
+        container.innerHTML = '<div class="text-center text-muted py-5">尚無紀錄</div>';
+        return;
     }
-
-    function deleteItem(id) {
-        if(!confirm('確定要刪除這筆紀錄嗎？')) return;
-        let data = JSON.parse(localStorage.getItem(DB_NAME)) || [];
-        localStorage.setItem(DB_NAME, JSON.stringify(data.filter(i => i.id !== id)));
-        renderHistory();
-    }
-
-    function renderHistory() {
-        const data = JSON.parse(localStorage.getItem(DB_NAME)) || [];
-        const container = document.getElementById('historyList');
-        container.innerHTML = data.map(i => `
-            <div class="history-card">
-                <div class="pain-badge">痛: ${i.pain}</div>
-                <div class="fw-bold mb-1">${i.date}</div>
-                <div class="small text-muted mb-2">${i.weather} | 💧 ${i.humidity}%</div>
-                <div class="mb-2">
-                    ${i.meds ? '<span class="pill-tag pill-med">💊 希樂葆</span>' : ''}
-                    ${i.herbs ? '<span class="pill-tag pill-herb">🌿 中藥</span>' : ''}
-                    ${i.junk ? '<span class="pill-tag pill-junk">🍕 垃圾食物</span>' : ''}
-                </div>
-                <div class="data-grid row g-0 small text-muted pt-2 border-top">
-                    <div class="col-6">😴 睡眠: ${i.sleep}</div><div class="col-6">💗 HRV: ${i.hrv}</div>
-                    <div class="col-6">🏃 有氧: ${i.aerobic}m</div><div class="col-6">🏋️ 重訓: ${i.weight}m</div>
-                </div>
-                ${i.memo ? `<div class="mt-2 small bg-light p-2 rounded">${i.memo}</div>` : ''}
-                <a href="#" class="delete-btn" onclick="deleteItem(${i.id})">🗑️ 刪除</a>
+    container.innerHTML = data.map(i => `
+        <div class="history-card">
+            <div class="pain-badge" style="background:${painColor(i.pain)}">痛: ${i.pain}</div>
+            <div class="fw-bold mb-1">${i.date}</div>
+            <div class="small text-muted mb-2">${i.weather} | 💧 ${i.humidity}%</div>
+            <div class="mb-2">
+                ${i.meds ? '<span class="pill-tag pill-med">💊 希樂葆</span>' : ''}
+                ${i.herbs ? '<span class="pill-tag pill-herb">🌿 中藥</span>' : ''}
+                ${i.junk ? '<span class="pill-tag pill-junk">🍕 垃圾食物</span>' : ''}
             </div>
-        `).join('');
+            <div class="row g-0 small text-muted pt-2 border-top">
+                <div class="col-6">😴 睡眠: ${i.sleep || '-'}</div><div class="col-6">💗 HRV: ${i.hrv || '-'}</div>
+                <div class="col-6">🏃 有氧: ${i.aerobic ? i.aerobic + 'm' : '-'}</div><div class="col-6">🏋️ 重訓: ${i.weight ? i.weight + 'm' : '-'}</div>
+            </div>
+            ${i.memo ? `<div class="mt-2 small bg-light p-2 rounded">${i.memo}</div>` : ''}
+            <a href="#" class="delete-btn" onclick="event.preventDefault();deleteItem(${i.id})">🗑️ 刪除</a>
+        </div>
+    `).join('');
+}
+
+// 日期加減工具
+function addDays(dateStr, n) {
+    const d = new Date(dateStr);
+    d.setDate(d.getDate() + n);
+    return d.toISOString().split('T')[0];
+}
+
+function initAnalysis() {
+    const fullData = JSON.parse(localStorage.getItem(DB_NAME)) || [];
+    const start = document.getElementById('startDate').value;
+    const end = document.getElementById('endDate').value;
+    if (!start || !end) return;
+
+    // 篩選範圍內資料
+    const data = fullData.filter(i => i.date >= start && i.date <= end);
+    const sorted = [...data].sort((a, b) => a.date.localeCompare(b.date));
+
+    // 建立日期查找表（全資料）
+    const byDate = {};
+    fullData.forEach(i => { byDate[i.date] = i; });
+
+    // 連續高痛警示
+    const streakEl = document.getElementById('streakAlert');
+    let streak = 0, maxStreak = 0;
+    sorted.forEach(i => {
+        if (i.pain >= 7) { streak++; maxStreak = Math.max(maxStreak, streak); }
+        else streak = 0;
+    });
+    streakEl.innerHTML = maxStreak >= 3
+        ? `<div class="alert-streak">⚠️ 此期間出現連續 <strong>${maxStreak} 天</strong>疼痛 ≥ 7，建議就醫評估。</div>`
+        : '';
+
+    // 統計摘要
+    if (data.length > 0) {
+        const avgPain = (data.reduce((s, i) => s + i.pain, 0) / data.length).toFixed(1);
+        const maxPain = Math.max(...data.map(i => i.pain));
+        const highDays = data.filter(i => i.pain >= 7).length;
+        document.getElementById('summaryStats').innerHTML = `
+            <div class="stat-item"><div class="stat-num">${avgPain}</div><div class="stat-label">平均痛感</div></div>
+            <div class="stat-item"><div class="stat-num" style="color:#d9534f">${maxPain}</div><div class="stat-label">最高痛感</div></div>
+            <div class="stat-item"><div class="stat-num">${highDays}</div><div class="stat-label">高痛天數(≥7)</div></div>
+        `;
     }
 
-    function initAnalysis() {
-        const fullData = JSON.parse(localStorage.getItem(DB_NAME)) || [];
-        const start = document.getElementById('startDate').value;
-        const end = document.getElementById('endDate').value;
-        
-        const data = fullData.filter(i => i.date >= start && i.date <= end);
+    // 趨勢圖
+    if (chartInstance) chartInstance.destroy();
+    chartInstance = new Chart(document.getElementById('trendChart'), {
+        type: 'line',
+        data: {
+            labels: sorted.map(i => i.date.slice(5)),
+            datasets: [{
+                label: '疼痛趨勢',
+                data: sorted.map(i => i.pain),
+                borderColor: '#94a7ae',
+                tension: 0.3,
+                fill: true,
+                backgroundColor: 'rgba(148,167,174,0.1)',
+                pointBackgroundColor: sorted.map(i => painColor(i.pain)),
+                pointRadius: 5
+            }]
+        },
+        options: {
+            scales: { y: { min: 0, max: 10, ticks: { stepSize: 1 } } },
+            plugins: { legend: { display: false } }
+        }
+    });
 
-        const factors = [
-            { n: '🌧️ 雨天/濕冷', f: i => i.weather === '雨天' || i.weather === '濕冷' },
-            { n: '☀️ 晴天/多雲', f: i => i.weather === '晴天' || i.weather === '多雲' },
-            { n: '🍕 吃垃圾食物', f: i => i.junk },
-            { n: '🥗 飲食健康', f: i => !i.junk },
-            { n: '😴 睡眠飽足(>75)', f: i => i.sleep >= 75 },
-            { n: '🥱 睡眠不足(<60)', f: i => i.sleep < 60 && i.sleep > 0 },
-            { n: '🏃 有運動日', f: i => i.aerobic > 0 || i.weight > 0 },
-            { n: '💊 有吃希樂葆', f: i => i.meds }
-        ];
+    // ---- 核心：Lag-1 因子分析 ----
+    // 對每筆今日痛感，找前一天的生活因子
+    const pairs = [];
+    sorted.forEach(today => {
+        const prevDate = addDays(today.date, -1);
+        const prev = byDate[prevDate];
+        if (prev) pairs.push({ pain: today.pain, prev });
+    });
 
-        document.getElementById('factorStatsBody').innerHTML = factors.map(cfg => {
-            const group = data.filter(cfg.f);
-            const count = group.length;
-            const avg = count ? (group.reduce((s, x) => s + x.pain, 0) / count).toFixed(1) : '-';
-            const risk = (avg !== '-' && avg >= 7.5) ? '高' : '低';
-            return `<tr><td>${cfg.n}</td><td>${count} 筆</td><td class="fw-bold">${avg}</td><td><span class="risk-badge ${risk === '高' ? 'risk-high' : 'risk-low'}">${risk}</span></td></tr>`;
-        }).join('');
-        
-        const sorted = [...data].sort((a,b) => new Date(a.date) - new Date(b.date));
-        if(chartInstance) chartInstance.destroy();
-        chartInstance = new Chart(document.getElementById('trendChart'), {
-            type: 'line',
-            data: { labels: sorted.map(i => i.date.slice(5)), datasets: [{ label: '疼痛趨勢', data: sorted.map(i => i.pain), borderColor: '#94a7ae', tension: 0.3, fill: true, backgroundColor: 'rgba(148, 167, 174, 0.1)' }] },
-            options: { 
-                scales: { y: { min: 0, max: 10, ticks: { stepSize: 1 } } },
-                plugins: { legend: { display: false } } 
-            }
-        });
-    }
+    document.getElementById('lagCoverage').innerText =
+        `共 ${sorted.length} 筆資料，成功配對前日因子 ${pairs.length} 筆（${sorted.length - pairs.length} 筆因無前日資料而排除）`;
 
-    function exportData() {
-        const blob = new Blob([localStorage.getItem(DB_NAME)], {type: 'application/json'});
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `as_pro_backup.json`;
-        a.click();
-    }
+    const factors = [
+        { n: '🌧️ 前日雨天/濕冷', f: p => p.weather === '雨天' || p.weather === '濕冷' },
+        { n: '☀️ 前日晴天/多雲', f: p => p.weather === '晴天' || p.weather === '多雲' },
+        { n: '🍕 前日吃垃圾食物', f: p => p.junk },
+        { n: '🥗 前日飲食健康', f: p => !p.junk },
+        { n: '😴 前日睡眠飽足(>75)', f: p => p.sleep >= 75 },
+        { n: '🥱 前日睡眠不足(<60)', f: p => p.sleep > 0 && p.sleep < 60 },
+        { n: '🏃 前日有運動', f: p => p.aerobic > 0 || p.weight > 0 },
+        { n: '🛋️ 前日沒有運動', f: p => p.aerobic === 0 && p.weight === 0 },
+        { n: '💊 前日有服希樂葆', f: p => p.meds },
+        { n: '💗 前日HRV偏高(>60)', f: p => p.hrv > 60 },
+        { n: '💔 前日HRV偏低(≤60)', f: p => p.hrv > 0 && p.hrv <= 60 }
+    ];
 
-    function importData(e) {
-        const reader = new FileReader();
-        reader.onload = (ev) => { localStorage.setItem(DB_NAME, ev.target.result); location.reload(); };
-        reader.readAsText(e.target.files[0]);
-    }
+    document.getElementById('factorStatsBody').innerHTML = factors.map(cfg => {
+        const group = pairs.filter(pair => cfg.f(pair.prev));
+        const count = group.length;
+        if (count === 0) return `<tr><td>${cfg.n}</td><td>-</td><td class="text-muted">-</td><td></td></tr>`;
+        const avg = (group.reduce((s, x) => s + x.pain, 0) / count).toFixed(1);
+        let riskClass, riskText;
+        if (avg >= 7) { riskClass = 'risk-high'; riskText = '高風險'; }
+        else if (avg >= 4.5) { riskClass = 'risk-mid'; riskText = '中等'; }
+        else { riskClass = 'risk-low'; riskText = '低風險'; }
+        return `<tr>
+            <td>${cfg.n}</td>
+            <td>${count} 筆</td>
+            <td class="fw-bold">${avg}</td>
+            <td><span class="risk-badge ${riskClass}">${riskText}</span></td>
+        </tr>`;
+    }).join('');
+}
+
+function exportData() {
+    const blob = new Blob([localStorage.getItem(DB_NAME) || '[]'], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `as_pro_backup_${today}.json`;
+    a.click();
+}
+
+function importData(e) {
+    const reader = new FileReader();
+    reader.onload = ev => {
+        try {
+            JSON.parse(ev.target.result);
+            localStorage.setItem(DB_NAME, ev.target.result);
+            location.reload();
+        } catch { alert('檔案格式錯誤，請確認是正確的 AS Pro 備份檔'); }
+    };
+    reader.readAsText(e.target.files[0]);
+}
 </script>
 </body>
 </html>
