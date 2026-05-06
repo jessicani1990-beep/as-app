@@ -169,9 +169,13 @@ input[type=range]:active::-webkit-slider-thumb{box-shadow:0 0 0 8px var(--aglow)
       <div><label class="fl">睡眠分數</label><input type="number" id="sleep"></div>
       <div><label class="fl">HRV</label><input type="number" id="hrv"></div>
     </div>
-    <div class="fr" style="margin-bottom:0">
+    <div class="fr">
       <div><label class="fl">有氧 min</label><input type="number" id="aerobic"></div>
       <div><label class="fl">重訓 min</label><input type="number" id="weight"></div>
+    </div>
+    <div>
+      <label class="fl">步數</label>
+      <input type="number" id="steps" placeholder="選填">
     </div>
   </div>
   <div class="card">
@@ -274,6 +278,7 @@ document.getElementById('endDate').value=today;
   document.getElementById('hrv').value=r.hrv||'';
   document.getElementById('aerobic').value=r.aerobic||'';
   document.getElementById('weight').value=r.weight||'';
+  document.getElementById('steps').value=r.steps||'';
   document.getElementById('memo').value=r.memo||'';
 })();
 
@@ -317,6 +322,7 @@ function saveData(){
     hrv:parseInt(document.getElementById('hrv').value)||0,
     aerobic:parseInt(document.getElementById('aerobic').value)||0,
     weight:parseInt(document.getElementById('weight').value)||0,
+    steps:parseInt(document.getElementById('steps').value)||0,
     memo:document.getElementById('memo').value
   };
   let d=JSON.parse(localStorage.getItem(DB))||[];
@@ -363,6 +369,7 @@ function renderHistory(){
       <div class="hstats">
         <span>😴 ${i.sleep||'—'}</span><span>💗 HRV ${i.hrv||'—'}</span>
         <span>🏃 ${i.aerobic?i.aerobic+'m':'—'}</span><span>🏋️ ${i.weight?i.weight+'m':'—'}</span>
+        <span>👟 ${i.steps?i.steps.toLocaleString()+'步':'—'}</span>
       </div>
       ${i.memo?`<div class="hmemo">${i.memo}</div>`:''}
       <button class="hdel" onclick="deleteItem(${i.id})">刪除</button>
@@ -429,6 +436,8 @@ function initAnalysis(){
     {n:'💊 前日服希樂葆',    f:p=>p.meds},
     {n:'💗 前日 HRV > 60',  f:p=>p.hrv>60},
     {n:'💔 前日 HRV ≤ 60',  f:p=>p.hrv>0&&p.hrv<=60},
+    {n:'👟 前日步數 > 5,000', f:p=>p.steps>5000},
+    {n:'🚶 前日步數 > 10,000',f:p=>p.steps>10000},
   ];
   const facRows=facs.map(cfg=>{
     const g=pairs.filter(p=>cfg.f(p.prev));
