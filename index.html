@@ -142,10 +142,21 @@ input[type=range]:active::-webkit-slider-thumb{box-shadow:0 0 0 8px var(--aglow)
   </div>
   <div class="card">
     <div class="ct">疼痛程度</div>
-    <div class="pr">
-      <span class="pn" id="pVal" style="color:var(--green)">1</span>
-      <input type="range" min="0" max="10" id="pain" value="1" oninput="updPain(this.value)">
-      <span style="font-size:0.72rem;color:var(--t3);min-width:14px">10</span>
+    <div style="margin-bottom:16px">
+      <label class="fl" style="margin-bottom:10px">🌅 剛起床</label>
+      <div class="pr">
+        <span class="pn" id="pValM" style="color:var(--green)">1</span>
+        <input type="range" min="0" max="10" id="painMorning" value="1" oninput="updPain('M',this.value)">
+        <span style="font-size:0.72rem;color:var(--t3);min-width:14px">10</span>
+      </div>
+    </div>
+    <div>
+      <label class="fl" style="margin-bottom:10px">📅 整天平均</label>
+      <div class="pr">
+        <span class="pn" id="pValD" style="color:var(--green)">1</span>
+        <input type="range" min="0" max="10" id="painDay" value="1" oninput="updPain('D',this.value)">
+        <span style="font-size:0.72rem;color:var(--t3);min-width:14px">10</span>
+      </div>
     </div>
   </div>
   <div class="card">
@@ -167,7 +178,14 @@ input[type=range]:active::-webkit-slider-thumb{box-shadow:0 0 0 8px var(--aglow)
     <div class="ct">身體數據</div>
     <div class="fr">
       <div><label class="fl">睡眠分數</label><input type="number" id="sleep"></div>
-      <div><label class="fl">HRV</label><input type="number" id="hrv"></div>
+      <div><label class="fl">HRV 狀態</label>
+        <select id="hrv">
+          <option value="">未填</option>
+          <option value="low">📉 太低</option>
+          <option value="ok">⚖️ 平衡</option>
+          <option value="high">📈 太高</option>
+        </select>
+      </div>
     </div>
     <div class="fr">
       <div><label class="fl">有氧 min</label><input type="number" id="aerobic"></div>
@@ -229,6 +247,10 @@ input[type=range]:active::-webkit-slider-thumb{box-shadow:0 0 0 8px var(--aglow)
   <div class="card">
     <div class="ct">資料管理</div>
     <p class="bn">資料儲存於本機瀏覽器。換裝置或清除瀏覽器前，請先匯出備份檔。</p>
+    <div style="background:var(--bg2);border-radius:var(--rs);padding:12px 14px;margin-bottom:18px;font-size:0.8rem;color:var(--t2);display:flex;justify-content:space-between;align-items:center;">
+      <span>📦 上次備份</span>
+      <span id="lastBackupTime" style="font-family:'DM Mono',monospace;color:var(--t3)">尚未備份</span>
+    </div>
     <button class="bb" onclick="exportData()"><span>📥</span><span>匯出 JSON 備份</span></button>
     <input type="file" id="importFile" style="display:none" onchange="importData(event)">
     <button class="bb" onclick="document.getElementById('importFile').click()"><span>📤</span><span>匯入 JSON 備份</span></button>
@@ -268,7 +290,8 @@ document.getElementById('endDate').value=today;
   const d=JSON.parse(localStorage.getItem(DB))||[];
   const r=d.find(i=>i.date===today);
   if(!r)return;
-  document.getElementById('pain').value=r.pain; updPain(r.pain);
+  document.getElementById('painMorning').value=r.painMorning??1; updPain('M',r.painMorning??1);
+  document.getElementById('painDay').value=r.painDay??1; updPain('D',r.painDay??1);
   document.getElementById('weather').value=r.weather;
   document.getElementById('humidity').value=r.humidity||'';
   if(r.meds){document.getElementById('meds').checked=true;document.getElementById('pm').classList.add('cm');}
@@ -282,9 +305,9 @@ document.getElementById('endDate').value=today;
   document.getElementById('memo').value=r.memo||'';
 })();
 
-function updPain(v){
+function updPain(which,v){
   v=parseInt(v);
-  const el=document.getElementById('pVal');
+  const el=document.getElementById(which==='M'?'pValM':'pValD');
   el.innerText=v;
   el.style.color=v<=3?'var(--green)':v<=6?'var(--amber)':'var(--red)';
 }
@@ -314,12 +337,14 @@ function saveData(){
   const r={id:Date.now(),date,
     weather:document.getElementById('weather').value,
     humidity:parseInt(document.getElementById('humidity').value)||0,
-    pain:parseInt(document.getElementById('pain').value),
+    painMorning:parseInt(document.getElementById('painMorning').value),
+    painDay:parseInt(document.getElementById('painDay').value),
+    pain:parseInt(document.getElementById('painDay').value), // 向下相容，分析用整天平均
     meds:document.getElementById('meds').checked,
     herbs:document.getElementById('herbs').checked,
     junk:document.getElementById('junk').checked,
     sleep:parseInt(document.getElementById('sleep').value)||0,
-    hrv:parseInt(document.getElementById('hrv').value)||0,
+    hrv:document.getElementById('hrv').value||'',
     aerobic:parseInt(document.getElementById('aerobic').value)||0,
     weight:parseInt(document.getElementById('weight').value)||0,
     steps:parseInt(document.getElementById('steps').value)||0,
@@ -329,6 +354,33 @@ function saveData(){
   d=d.filter(i=>i.date!==date);d.unshift(r);
   localStorage.setItem(DB,JSON.stringify(d));
   toast('✓ 儲存成功','ok');
+}
+function editRecord(date){
+  const d=JSON.parse(localStorage.getItem(DB))||[];
+  const r=d.find(i=>i.date===date);
+  if(!r)return;
+  document.getElementById('recordDate').value=r.date;
+  updPain('M',r.painMorning??r.pain??1); document.getElementById('painMorning').value=r.painMorning??r.pain??1;
+  updPain('D',r.painDay??r.pain??1); document.getElementById('painDay').value=r.painDay??r.pain??1;
+  document.getElementById('weather').value=r.weather;
+  document.getElementById('humidity').value=r.humidity||'';
+  const pm=document.getElementById('pm'),ph=document.getElementById('ph'),pj=document.getElementById('pj');
+  document.getElementById('meds').checked=r.meds; pm.classList.toggle('cm',r.meds);
+  document.getElementById('herbs').checked=r.herbs; ph.classList.toggle('ch',r.herbs);
+  document.getElementById('junk').checked=r.junk; pj.classList.toggle('cj',r.junk);
+  document.getElementById('sleep').value=r.sleep||'';
+  document.getElementById('hrv').value=r.hrv||'';
+  document.getElementById('aerobic').value=r.aerobic||'';
+  document.getElementById('weight').value=r.weight||'';
+  document.getElementById('steps').value=r.steps||'';
+  document.getElementById('memo').value=r.memo||'';
+  // 切換到紀錄頁
+  document.querySelectorAll('.tc').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.nb').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-record').classList.add('active');
+  document.querySelector('.nb').classList.add('active');
+  window.scrollTo({top:0,behavior:'smooth'});
+  toast('已載入 '+date+'，修改後儲存即可','wn');
 }
 function deleteItem(id){
   if(!confirm('確定要刪除？'))return;
@@ -348,8 +400,8 @@ function renderHistory(){
   if(search)d=d.filter(i=>(i.memo||'').toLowerCase().includes(search));
   if(sort==='newest')d.sort((a,b)=>b.date.localeCompare(a.date));
   if(sort==='oldest')d.sort((a,b)=>a.date.localeCompare(b.date));
-  if(sort==='pain_high')d.sort((a,b)=>b.pain-a.pain);
-  if(sort==='pain_low')d.sort((a,b)=>a.pain-b.pain);
+  if(sort==='pain_high')d.sort((a,b)=>(b.painDay??b.pain)-(a.painDay??a.pain));
+  if(sort==='pain_low')d.sort((a,b)=>(a.painDay??a.pain)-(b.painDay??b.pain));
   const c=document.getElementById('historyList');
   if(!d.length){c.innerHTML='<div style="text-align:center;color:var(--t3);padding:60px 0;font-size:0.88rem">尚無紀錄</div>';return;}
   c.innerHTML=d.map(i=>`
@@ -359,7 +411,13 @@ function renderHistory(){
           <div class="hdate">${i.date}</div>
           <div class="hmeta">${i.weather}　💧 ${i.humidity}%</div>
         </div>
-        <div class="hbadge" style="color:${pc(i.pain)};background:${pb(i.pain)}">${i.pain}</div>
+        <div class="hbadge" style="color:${pc(i.painDay??i.pain)};background:${pb(i.painDay??i.pain)}">${i.painDay??i.pain}</div>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:10px;font-size:0.78rem;">
+        <span style="color:var(--t3)">🌅 起床</span>
+        <span style="font-family:'DM Mono',monospace;font-weight:500;color:${pc(i.painMorning??i.pain)}">${i.painMorning??i.pain??'—'}</span>
+        <span style="color:var(--t3);margin-left:8px">📅 整天</span>
+        <span style="font-family:'DM Mono',monospace;font-weight:500;color:${pc(i.painDay??i.pain)}">${i.painDay??i.pain??'—'}</span>
       </div>
       <div class="hpills">
         ${i.meds?'<span class="hp hm">💊 希樂葆</span>':''}
@@ -367,12 +425,16 @@ function renderHistory(){
         ${i.junk?'<span class="hp hj">🍕 垃圾食物</span>':''}
       </div>
       <div class="hstats">
-        <span>😴 ${i.sleep||'—'}</span><span>💗 HRV ${i.hrv||'—'}</span>
+        <span>😴 ${i.sleep||'—'}${i.sleep?(i.sleep>=75?' ✓':''):''}　</span>
+        <span>💗 ${i.hrv==='low'?'太低':i.hrv==='ok'?'平衡':i.hrv==='high'?'太高':'—'}</span>
         <span>🏃 ${i.aerobic?i.aerobic+'m':'—'}</span><span>🏋️ ${i.weight?i.weight+'m':'—'}</span>
         <span>👟 ${i.steps?i.steps.toLocaleString()+'步':'—'}</span>
       </div>
       ${i.memo?`<div class="hmemo">${i.memo}</div>`:''}
-      <button class="hdel" onclick="deleteItem(${i.id})">刪除</button>
+      <div style="display:flex;justify-content:flex-end;gap:12px;margin-top:12px;padding-top:10px;border-top:1px solid var(--border)">
+        <button class="hdel" style="position:static" onclick="editRecord('${i.date}')">✏️ 編輯</button>
+        <button class="hdel" style="position:static" onclick="deleteItem(${i.id})">🗑️ 刪除</button>
+      </div>
     </div>
   `).join('');
 }
@@ -390,13 +452,13 @@ function initAnalysis(){
 
   const sa=document.getElementById('streakAlert');
   let streak=0,max=0;
-  sorted.forEach(i=>{if(i.pain>=7){streak++;max=Math.max(max,streak);}else streak=0;});
+  sorted.forEach(i=>{if((i.painDay??i.pain)>=7){streak++;max=Math.max(max,streak);}else streak=0;});
   sa.innerHTML=max>=3?`<div class="sa">⚠ 此期間連續 <strong>${max} 天</strong>疼痛 ≥ 7，建議就醫評估。</div>`:'';
 
   if(data.length){
-    const avg=(data.reduce((s,i)=>s+i.pain,0)/data.length).toFixed(1);
-    const mx=Math.max(...data.map(i=>i.pain));
-    const hi=data.filter(i=>i.pain>=7).length;
+    const avg=(data.reduce((s,i)=>s+(i.painDay??i.pain),0)/data.length).toFixed(1);
+    const mx=Math.max(...data.map(i=>i.painDay??i.pain));
+    const hi=data.filter(i=>(i.painDay??i.pain)>=7).length;
     document.getElementById('summaryStats').innerHTML=`
       <div class="sb"><div class="sv" style="color:var(--accent)">${avg}</div><div class="sl">平均痛感</div></div>
       <div class="sb"><div class="sv" style="color:var(--red)">${mx}</div><div class="sl">最高痛感</div></div>
@@ -407,9 +469,9 @@ function initAnalysis(){
   chart=new Chart(document.getElementById('trendChart'),{
     type:'line',
     data:{labels:sorted.map(i=>i.date.slice(5)),datasets:[{
-      data:sorted.map(i=>i.pain),borderColor:'#4a90a4',borderWidth:2,tension:.4,fill:true,
+      data:sorted.map(i=>i.painDay??i.pain),borderColor:'#4a90a4',borderWidth:2,tension:.4,fill:true,
       backgroundColor:'rgba(74,144,164,0.07)',
-      pointBackgroundColor:sorted.map(i=>i.pain<=3?'#6bcb8b':i.pain<=6?'#f0b860':'#e06060'),
+      pointBackgroundColor:sorted.map(i=>(i.painDay??i.pain)<=3?'#6bcb8b':(i.painDay??i.pain)<=6?'#f0b860':'#e06060'),
       pointRadius:4,pointHoverRadius:6
     }]},
     options:{responsive:true,
@@ -422,22 +484,23 @@ function initAnalysis(){
   });
 
   const pairs=[];
-  sorted.forEach(d=>{const p=byDate[addDays(d.date,-1)];if(p)pairs.push({pain:d.pain,prev:p});});
+  sorted.forEach(d=>{const p=byDate[addDays(d.date,-1)];if(p)pairs.push({pain:d.painDay??d.pain,prev:p});});
   document.getElementById('lagCoverage').textContent=`共 ${sorted.length} 筆，成功配對 ${pairs.length} 筆（${sorted.length-pairs.length} 筆無前日資料）`;
 
   const facs=[
-    {n:'🌧 前日雨天 / 濕冷',f:p=>p.weather==='雨天'||p.weather==='濕冷'},
-    {n:'☀️ 前日晴天 / 多雲', f:p=>p.weather==='晴天'||p.weather==='多雲'},
-    {n:'🍕 前日垃圾食物',    f:p=>p.junk},
-    {n:'😴 前日睡眠飽足 >75',f:p=>p.sleep>=75},
-    {n:'🥱 前日睡眠不足 <60',f:p=>p.sleep>0&&p.sleep<60},
-    {n:'🏃 前日有有氧',      f:p=>p.aerobic>0},
-    {n:'🏋️ 前日有重訓',      f:p=>p.weight>0},
-    {n:'💊 前日服希樂葆',    f:p=>p.meds},
-    {n:'💗 前日 HRV > 60',  f:p=>p.hrv>60},
-    {n:'💔 前日 HRV ≤ 60',  f:p=>p.hrv>0&&p.hrv<=60},
-    {n:'👟 前日步數 > 5,000', f:p=>p.steps>5000},
-    {n:'🚶 前日步數 > 10,000',f:p=>p.steps>10000},
+    {n:'🌧 前日雨天 / 濕冷',  f:p=>p.weather==='雨天'||p.weather==='濕冷'},
+    {n:'☀️ 前日晴天 / 多雲',  f:p=>p.weather==='晴天'||p.weather==='多雲'},
+    {n:'🍕 前日垃圾食物',     f:p=>p.junk},
+    {n:'😴 前日睡眠飽足 ≥75', f:p=>p.sleep>=75},
+    {n:'🥱 前日睡眠不足 <75', f:p=>p.sleep>0&&p.sleep<75},
+    {n:'🏃 前日有有氧',       f:p=>p.aerobic>0},
+    {n:'🏋️ 前日有重訓',       f:p=>p.weight>0},
+    {n:'💊 前日服希樂葆',     f:p=>p.meds},
+    {n:'📉 前日 HRV 太低',    f:p=>p.hrv==='low'},
+    {n:'⚖️ 前日 HRV 平衡',    f:p=>p.hrv==='ok'},
+    {n:'📈 前日 HRV 太高',    f:p=>p.hrv==='high'},
+    {n:'👟 前日步數 > 5,000',  f:p=>p.steps>5000},
+    {n:'🚶 前日步數 > 10,000', f:p=>p.steps>10000},
   ];
   const facRows=facs.map(cfg=>{
     const g=pairs.filter(p=>cfg.f(p.prev));
@@ -457,7 +520,15 @@ function initAnalysis(){
 function exportData(){
   const b=new Blob([localStorage.getItem(DB)||'[]'],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=`as_pro_${today}.json`;a.click();
+  const now=new Date().toLocaleString('zh-Hant',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+  localStorage.setItem('as_pro_last_backup',now);
+  document.getElementById('lastBackupTime').textContent=now;
 }
+
+(function(){
+  const t=localStorage.getItem('as_pro_last_backup');
+  if(t)document.getElementById('lastBackupTime').textContent=t;
+})();
 function importData(e){
   const r=new FileReader();
   r.onload=ev=>{try{JSON.parse(ev.target.result);localStorage.setItem(DB,ev.target.result);toast('匯入成功，重新載入…','ok');setTimeout(()=>location.reload(),1200);}catch{toast('格式錯誤','wn');}};
