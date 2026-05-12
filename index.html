@@ -484,7 +484,7 @@ function initAnalysis(){
   });
 
   const pairs=[];
-  sorted.forEach(d=>{const p=byDate[addDays(d.date,-1)];if(p)pairs.push({pain:d.painDay??d.pain,prev:p});});
+  sorted.forEach(d=>{const p=byDate[addDays(d.date,-1)];if(p){const pm=d.painMorning??d.pain;const pd=d.painDay??d.pain;pairs.push({pain:(pm+pd)/2,prev:p});}});
   document.getElementById('lagCoverage').textContent=`共 ${sorted.length} 筆，成功配對 ${pairs.length} 筆（${sorted.length-pairs.length} 筆無前日資料）`;
 
   const facs=[
