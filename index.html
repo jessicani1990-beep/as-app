@@ -142,21 +142,10 @@ input[type=range]:active::-webkit-slider-thumb{box-shadow:0 0 0 8px var(--aglow)
   </div>
   <div class="card">
     <div class="ct">疼痛程度</div>
-    <div style="margin-bottom:16px">
-      <label class="fl" style="margin-bottom:10px">🌅 剛起床</label>
-      <div class="pr">
-        <span class="pn" id="pValM" style="color:var(--green)">1</span>
-        <input type="range" min="0" max="10" id="painMorning" value="1" oninput="updPain('M',this.value)">
-        <span style="font-size:0.72rem;color:var(--t3);min-width:14px">10</span>
-      </div>
-    </div>
-    <div>
-      <label class="fl" style="margin-bottom:10px">📅 整天平均</label>
-      <div class="pr">
-        <span class="pn" id="pValD" style="color:var(--green)">1</span>
-        <input type="range" min="0" max="10" id="painDay" value="1" oninput="updPain('D',this.value)">
-        <span style="font-size:0.72rem;color:var(--t3);min-width:14px">10</span>
-      </div>
+    <div class="pr">
+      <span class="pn" id="pValD" style="color:var(--green)">1</span>
+      <input type="range" min="0" max="10" id="painDay" value="1" oninput="updPain('D',this.value)">
+      <span style="font-size:0.72rem;color:var(--t3);min-width:14px">10</span>
     </div>
   </div>
   <div class="card">
@@ -290,8 +279,7 @@ document.getElementById('endDate').value=today;
   const d=JSON.parse(localStorage.getItem(DB))||[];
   const r=d.find(i=>i.date===today);
   if(!r)return;
-  document.getElementById('painMorning').value=r.painMorning??1; updPain('M',r.painMorning??1);
-  document.getElementById('painDay').value=r.painDay??1; updPain('D',r.painDay??1);
+  document.getElementById('painDay').value=r.painDay??r.pain??1; updPain('D',r.painDay??r.pain??1);
   document.getElementById('weather').value=r.weather;
   document.getElementById('humidity').value=r.humidity||'';
   if(r.meds){document.getElementById('meds').checked=true;document.getElementById('pm').classList.add('cm');}
@@ -337,9 +325,8 @@ function saveData(){
   const r={id:Date.now(),date,
     weather:document.getElementById('weather').value,
     humidity:parseInt(document.getElementById('humidity').value)||0,
-    painMorning:parseInt(document.getElementById('painMorning').value),
     painDay:parseInt(document.getElementById('painDay').value),
-    pain:parseInt(document.getElementById('painDay').value), // 向下相容，分析用整天平均
+    pain:parseInt(document.getElementById('painDay').value),
     meds:document.getElementById('meds').checked,
     herbs:document.getElementById('herbs').checked,
     junk:document.getElementById('junk').checked,
@@ -360,7 +347,6 @@ function editRecord(date){
   const r=d.find(i=>i.date===date);
   if(!r)return;
   document.getElementById('recordDate').value=r.date;
-  updPain('M',r.painMorning??r.pain??1); document.getElementById('painMorning').value=r.painMorning??r.pain??1;
   updPain('D',r.painDay??r.pain??1); document.getElementById('painDay').value=r.painDay??r.pain??1;
   document.getElementById('weather').value=r.weather;
   document.getElementById('humidity').value=r.humidity||'';
@@ -412,12 +398,6 @@ function renderHistory(){
           <div class="hmeta">${i.weather}　💧 ${i.humidity}%</div>
         </div>
         <div class="hbadge" style="color:${pc(i.painDay??i.pain)};background:${pb(i.painDay??i.pain)}">${i.painDay??i.pain}</div>
-      </div>
-      <div style="display:flex;gap:8px;margin-bottom:10px;font-size:0.78rem;">
-        <span style="color:var(--t3)">🌅 起床</span>
-        <span style="font-family:'DM Mono',monospace;font-weight:500;color:${pc(i.painMorning??i.pain)}">${i.painMorning??i.pain??'—'}</span>
-        <span style="color:var(--t3);margin-left:8px">📅 整天</span>
-        <span style="font-family:'DM Mono',monospace;font-weight:500;color:${pc(i.painDay??i.pain)}">${i.painDay??i.pain??'—'}</span>
       </div>
       <div class="hpills">
         ${i.meds?'<span class="hp hm">💊 希樂葆</span>':''}
@@ -484,7 +464,7 @@ function initAnalysis(){
   });
 
   const pairs=[];
-  sorted.forEach(d=>{const p=byDate[addDays(d.date,-1)];if(p){const pm=d.painMorning??d.pain;const pd=d.painDay??d.pain;pairs.push({pain:(pm+pd)/2,prev:p});}});
+  sorted.forEach(d=>{const p=byDate[addDays(d.date,-1)];if(p)pairs.push({pain:d.painDay??d.pain,prev:p});});
   document.getElementById('lagCoverage').textContent=`共 ${sorted.length} 筆，成功配對 ${pairs.length} 筆（${sorted.length-pairs.length} 筆無前日資料）`;
 
   const facs=[
